@@ -74,12 +74,16 @@ func main() {
 		fmt.Println("Did not find any channel IDs. Exiting.")
 	}
 	//
+	fmt.Println("Done with download procedures.")
+	fmt.Print("Press Enter to close.")
+	reader := bufio.NewReader(os.Stdin)
+	_, err = reader.ReadString('\n')
 	return
 }
 
 func getChannelIDs(s *discordgo.Session) []string {
-	//channelIds := make([]string, 0)
 	var channelIds []string
+	//channelIds := make([]string, 0)
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Print("Do you want private channels?: (Y/n) ")
@@ -226,6 +230,16 @@ func getAllMessages(s *discordgo.Session, chatID string, baseFilePath string) {
 	}
 
 	fmt.Println("Starting download process.")
+	switch chnnl.IsPrivate {
+	case true:
+		// It is private channel. Print recipient.
+		fmt.Printf("Fetching channel: %v\n", chnnl.Recipient.Username)
+	case false:
+		fmt.Printf("Fetching channel: %v\n", chnnl.Name)
+	default:
+		panic("Channel has neither a name nor a recipient.")
+		//
+	}
 
 	lastMSG := chnnl.LastMessageID
 
@@ -354,7 +368,7 @@ func getAllMessages(s *discordgo.Session, chatID string, baseFilePath string) {
 				)
 			}
 
-			fmt.Println("Finished", messageCounter)
+			fmt.Printf("Fetched %d messages.\n", messageCounter)
 			lastMSG = msgList[len(msgList)-1].ID
 			time.Sleep(time.Millisecond * 1300)
 			msgList, err = s.ChannelMessages(chatID,
