@@ -73,3 +73,7 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+DP-Download
+DP-Download-arm6-64
+DP-Download-Darwin-64
+DP-Download-Linux-64
