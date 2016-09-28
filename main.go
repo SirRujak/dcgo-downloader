@@ -26,8 +26,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var globalMessageLimit int = 100
-var ErrJSONUnmarshal = errors.New("json unmarshal")
+var globalMessageLimit = 100
+var errJSONUnmarshal = errors.New("json unmarshal")
 
 func main() {
 	// Use discordgo.New(Token) to just use a token for login.
@@ -78,7 +78,8 @@ func main() {
 }
 
 func getChannelIDs(s *discordgo.Session) []string {
-	channelIds := make([]string, 0)
+	//channelIds := make([]string, 0)
+	var channelIds []string
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Print("Do you want private channels?: (Y/n) ")
@@ -117,7 +118,7 @@ func getChannelIDs(s *discordgo.Session) []string {
 		if tempResponse == "n" || tempResponse == "" {
 			// If they don't want to download them all.
 			fmt.Print("Do you have the ID?: (Y/n) ")
-			tempResponse, err := reader.ReadString('\n')
+			tempResponse, err = reader.ReadString('\n')
 			if err != nil {
 				panic(err)
 			}
@@ -193,7 +194,7 @@ func login() (*discordgo.Session, error) {
 	}
 	fmt.Println("")
 	password := strings.TrimSpace(string(bytePassword))
-	var token string = ""
+	var token string
 	dg, err := discordgo.New(email, password, token)
 	// Should this be &dg?
 	return dg, err
@@ -384,7 +385,7 @@ func getAllMessages(s *discordgo.Session, chatID string, baseFilePath string) {
 		}
 		//
 	}
-	fmt.Println("Download Complete. Fetched %d messages", messageCounter)
+	fmt.Printf("Download Complete. Fetched %d messages", messageCounter)
 }
 
 func processOneMessage(i int,
@@ -664,7 +665,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 func unmarshal(data []byte, v interface{}) error {
 	err := json.Unmarshal(data, v)
 	if err != nil {
-		return ErrJSONUnmarshal
+		return errJSONUnmarshal
 	}
 
 	return nil
