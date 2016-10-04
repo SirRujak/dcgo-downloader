@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -28,6 +29,12 @@ import (
 
 var globalMessageLimit = 100
 var errJSONUnmarshal = errors.New("json unmarshal")
+
+type counter struct {
+	messageCounter    int
+	attachmentCounter int
+	embedCounter      int
+}
 
 func main() {
 	// Use discordgo.New(Token) to just use a token for login.
@@ -64,7 +71,7 @@ func main() {
 	// 	-Guild:
 	//		-What is the channelID?
 	channelIds := getChannelIDs(dg)
-	baseFilePath := getBasePath()
+	baseFilePath := getBasePath(dg)
 	if len(channelIds) > 0 {
 		for i := 0; i < len(channelIds); i++ {
 			getAllMessages(dg, channelIds[i], baseFilePath)
@@ -120,6 +127,14 @@ func getChannelIDs(s *discordgo.Session) []string {
 		}
 		tempResponse = strings.ToLower(strings.TrimSpace(tempResponse))
 		if tempResponse == "n" || tempResponse == "" {
+			usrChnnls, err := s.UserChannels()
+			if len(usrChnnls) > 0 {
+				for chnlIterator := 0; chnlIterator < len(usrChnnls); chnlIterator++ {
+					if usrChnnls[chnlIterator].IsPrivate {
+						fmt.Printf("%v %v %v\n", usrChnnls[chnlIterator].Recipient.Username, usrChnnls[chnlIterator].Recipient.Discriminator, usrChnnls[chnlIterator].Recipient.ID)
+					}
+				}
+			}
 			// If they don't want to download them all.
 			fmt.Print("Do you have the ID?: (Y/n) ")
 			tempResponse, err = reader.ReadString('\n')
@@ -205,12 +220,18 @@ func login() (*discordgo.Session, error) {
 
 }
 
-func getBasePath() string {
+func getBasePath(dg *discordgo.Session) string {
 	baseFilePath, err := osext.ExecutableFolder()
 	if err != nil {
 		panic(err)
 	}
 	baseFilePath = filepath.Join(baseFilePath, "files")
+	userData, err := dg.User("@me")
+	if err != nil {
+		panic("Unable to get user info.")
+	}
+
+	baseFilePath = filepath.Join(baseFilePath, userData.Username+userData.Discriminator)
 	err = os.MkdirAll(baseFilePath, os.ModePerm)
 	if err != nil {
 		fmt.Println("Error 1: Unable to make path.")
@@ -243,7 +264,7 @@ func getAllMessages(s *discordgo.Session, chatID string, baseFilePath string) {
 
 	lastMSG := chnnl.LastMessageID
 
-	messageCounter := 0
+	messageCounter := counter{0, 0, 0}
 	messageString := ""
 	attachmentString := ""
 	embedString := ""
@@ -403,7 +424,7 @@ func getAllMessages(s *discordgo.Session, chatID string, baseFilePath string) {
 }
 
 func processOneMessage(i int,
-	messageCounter int,
+	messageCounter counter,
 	messageString string,
 	msgList []*discordgo.Message,
 	attachmentString string,
@@ -414,10 +435,10 @@ func processOneMessage(i int,
 	embedPath string,
 	messageWriter *bufio.Writer,
 
-) int {
+) counter {
 
 	concatString := ""
-	messageCounter++
+	messageCounter.messageCounter++
 	messageString = msgList[i].ID + "<" +
 		msgList[i].ChannelID + "<" +
 		html.EscapeString(
@@ -458,7 +479,8 @@ func processOneMessage(i int,
 			msgList[i].Attachments[0].Filename + "<" +
 			fmt.Sprintf("%v", msgList[i].Attachments[0].Width) + "<" +
 			fmt.Sprintf("%v", msgList[i].Attachments[0].Height) + "<" +
-			fmt.Sprintf("%v", msgList[i].Attachments[0].Size)
+			fmt.Sprintf("%v", msgList[i].Attachments[0].Size) + "<" +
+			strconv.Itoa(messageCounter.attachmentCounter)
 
 		fmt.Fprintln(attachmentWriter, attachmentString)
 		attachmentWriter.Flush()
@@ -471,7 +493,8 @@ func processOneMessage(i int,
 
 		attachmentSavePath := filepath.Join(
 			attachmentPath,
-			msgList[i].Attachments[0].ID+msgList[i].Attachments[0].Filename)
+			strconv.Itoa(messageCounter.attachmentCounter)+path.Ext(msgList[i].Attachments[0].Filename))
+		//msgList[i].Attachments[0].ID+msgList[i].Attachments[0].Filename)
 		attachmentFile, err := os.Create(attachmentSavePath)
 		defer attachmentFile.Close()
 		if err != nil {
@@ -483,9 +506,11 @@ func processOneMessage(i int,
 			log.Fatal(err)
 		}
 		//--------------------------------------------------------------
+		messageCounter.attachmentCounter++
 
 		if len(msgList[i].Attachments) > 1 {
 			for j := 1; j < len(msgList[i].Attachments); j++ {
+				messageCounter.attachmentCounter++
 				concatString += " " + msgList[i].Attachments[j].ID
 				attachmentString = msgList[i].ID + "<" +
 					msgList[i].Attachments[j].ID + "<" +
@@ -494,7 +519,8 @@ func processOneMessage(i int,
 					msgList[i].Attachments[j].Filename + "<" +
 					fmt.Sprintf("%v", msgList[i].Attachments[j].Width) + "<" +
 					fmt.Sprintf("%v", msgList[i].Attachments[j].Height) + "<" +
-					fmt.Sprintf("%v", msgList[i].Attachments[j].Size)
+					fmt.Sprintf("%v", msgList[i].Attachments[j].Size) + "<" +
+					strconv.Itoa(messageCounter.attachmentCounter)
 
 				fmt.Fprintln(attachmentWriter, attachmentString)
 				attachmentWriter.Flush()
@@ -507,8 +533,9 @@ func processOneMessage(i int,
 
 				attachmentSavePath := filepath.Join(
 					attachmentPath,
-					msgList[i].Attachments[j].ID+
-						msgList[i].Attachments[0].Filename)
+					//msgList[i].Attachments[j].ID+
+					strconv.Itoa(messageCounter.attachmentCounter)+path.Ext(msgList[i].Attachments[j].Filename))
+				//	msgList[i].Attachments[0].Filename)
 				attachmentFile, err := os.Create(attachmentSavePath)
 				defer attachmentFile.Close()
 				if err != nil {
@@ -521,12 +548,14 @@ func processOneMessage(i int,
 				}
 				//--------------------------------------------------------------
 
+				messageCounter.attachmentCounter++
 			}
 		}
 	}
 	messageString += concatString + "<"
 
 	if len(msgList[i].Embeds) > 0 {
+		messageCounter.embedCounter++
 		concatString = msgList[i].Embeds[0].URL
 		embedString = msgList[i].ID + "<" +
 			msgList[i].Embeds[0].URL + "<" +
@@ -557,10 +586,11 @@ func processOneMessage(i int,
 		if msgList[i].Embeds[0].Video != nil {
 			embedString += msgList[i].Embeds[0].Video.URL + "<" +
 				fmt.Sprintf("%v", msgList[i].Embeds[0].Video.Width) + "<" +
-				fmt.Sprintf("%v", msgList[i].Embeds[0].Video.Height)
+				fmt.Sprintf("%v", msgList[i].Embeds[0].Video.Height) + "<"
 		} else {
 			embedString += "<<<"
 		}
+		embedString += "<" + strconv.Itoa(messageCounter.embedCounter)
 
 		fmt.Fprintln(embedWriter, embedString)
 		embedWriter.Flush()
@@ -572,7 +602,8 @@ func processOneMessage(i int,
 				log.Fatal(err)
 			}
 
-			embedSavePath := filepath.Join(embedPath, msgList[i].ID+".png")
+			embedSavePath := filepath.Join(embedPath, strconv.Itoa(messageCounter.embedCounter)+".png")
+			//embedSavePath := filepath.Join(embedPath, msgList[i].ID+".png")
 			embedFile, err := os.Create(embedSavePath)
 			defer embedFile.Close()
 			if err != nil {
@@ -584,6 +615,8 @@ func processOneMessage(i int,
 				log.Fatal(err)
 			}
 		}
+
+		messageCounter.embedCounter++
 		//--------------------------------------------------------------
 
 		if len(msgList[i].Embeds) > 1 {
@@ -626,6 +659,7 @@ func processOneMessage(i int,
 				} else {
 					embedString += "<<<"
 				}
+				embedString += "<" + strconv.Itoa(messageCounter.embedCounter)
 
 				fmt.Fprintln(embedWriter, embedString)
 				embedWriter.Flush()
@@ -640,7 +674,8 @@ func processOneMessage(i int,
 
 					embedSavePath :=
 						filepath.Join(embedPath,
-							msgList[i].ID+msgList[i].Embeds[j].Title+".png")
+							strconv.Itoa(messageCounter.embedCounter)+".png")
+						//	msgList[i].ID+msgList[i].Embeds[j].Title+".png")
 					embedFile, err := os.Create(embedSavePath)
 					defer embedFile.Close()
 					if err != nil {
@@ -654,6 +689,7 @@ func processOneMessage(i int,
 				}
 				//--------------------------------------------------------------
 
+				messageCounter.embedCounter++
 			}
 		}
 
