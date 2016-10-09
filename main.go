@@ -49,9 +49,6 @@ func main() {
 		return
 	}
 
-	// Use to handle new messages that come in while we are running.
-	dg.AddHandler(messageCreate)
-
 	err = dg.Open()
 	if err != nil {
 		fmt.Println("Error opening connection, ", err)
@@ -60,7 +57,6 @@ func main() {
 
 	fmt.Println("Bot is running. Press CTRL-C to exit.")
 
-	//Do stuff here.
 	// New stuff. What do you want to download?
 	// Private or guild?
 	// 	-Private:
@@ -95,7 +91,6 @@ func main() {
 
 func getChannelIDs(s *discordgo.Session) []string {
 	var channelIds []string
-	//channelIds := make([]string, 0)
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Print("Do you want private channels?: (Y/n) ")
@@ -220,7 +215,7 @@ func login() (*discordgo.Session, error) {
 	password := strings.TrimSpace(string(bytePassword))
 	var token string
 	dg, err := discordgo.New(email, password, token)
-	// Should this be &dg?
+
 	return dg, err
 
 }
@@ -264,7 +259,6 @@ func getAllMessages(s *discordgo.Session, chatID string, baseFilePath string) {
 		fmt.Printf("Fetching channel: %v\n", chnnl.Name)
 	default:
 		panic("Channel has neither a name nor a recipient.")
-		//
 	}
 
 	lastMSG := chnnl.LastMessageID
@@ -370,7 +364,6 @@ func getAllMessages(s *discordgo.Session, chatID string, baseFilePath string) {
 		}
 
 		for len(msgList) == globalMessageLimit {
-			//for k := 0; k < 13; k++ {
 			// Do stuff with messages.
 			//get each message from the array
 			//replace mentions with names
@@ -394,8 +387,6 @@ func getAllMessages(s *discordgo.Session, chatID string, baseFilePath string) {
 				)
 			}
 
-			fmt.Printf("Fetched %d messages, %d attachments, %d embedings.", messageCounter.messageCounter, messageCounter.attachmentCounter, messageCounter.embedCounter)
-			fmt.Println()
 			lastMSG = msgList[len(msgList)-1].ID
 			time.Sleep(time.Millisecond * 1300)
 			msgList, err = s.ChannelMessages(chatID,
@@ -426,7 +417,7 @@ func getAllMessages(s *discordgo.Session, chatID string, baseFilePath string) {
 		}
 		//
 	}
-	fmt.Printf("Download Complete. Fetched %d messages", messageCounter)
+	fmt.Printf("Fetched %v messages, %v attachments, and %v embedings.\n", messageCounter.messageCounter, messageCounter.attachmentCounter, messageCounter.embedCounter)
 }
 
 func processOneMessage(i int,
@@ -500,7 +491,6 @@ func processOneMessage(i int,
 		attachmentSavePath := filepath.Join(
 			attachmentPath,
 			strconv.Itoa(messageCounter.attachmentCounter)+path.Ext(msgList[i].Attachments[0].Filename))
-		//msgList[i].Attachments[0].ID+msgList[i].Attachments[0].Filename)
 		attachmentFile, err := os.Create(attachmentSavePath)
 		defer attachmentFile.Close()
 		if err != nil {
@@ -539,9 +529,7 @@ func processOneMessage(i int,
 
 				attachmentSavePath := filepath.Join(
 					attachmentPath,
-					//msgList[i].Attachments[j].ID+
 					strconv.Itoa(messageCounter.attachmentCounter)+path.Ext(msgList[i].Attachments[j].Filename))
-				//	msgList[i].Attachments[0].Filename)
 				attachmentFile, err := os.Create(attachmentSavePath)
 				defer attachmentFile.Close()
 				if err != nil {
@@ -561,7 +549,6 @@ func processOneMessage(i int,
 	messageString += concatString + "<"
 
 	if len(msgList[i].Embeds) > 0 {
-		//messageCounter.embedCounter++
 		concatString = msgList[i].Embeds[0].URL
 		embedString = msgList[i].ID + "<" +
 			msgList[i].Embeds[0].URL + "<" +
@@ -609,7 +596,6 @@ func processOneMessage(i int,
 			}
 
 			embedSavePath := filepath.Join(embedPath, strconv.Itoa(messageCounter.embedCounter)+".png")
-			//embedSavePath := filepath.Join(embedPath, msgList[i].ID+".png")
 			embedFile, err := os.Create(embedSavePath)
 			defer embedFile.Close()
 			if err != nil {
@@ -681,7 +667,6 @@ func processOneMessage(i int,
 					embedSavePath :=
 						filepath.Join(embedPath,
 							strconv.Itoa(messageCounter.embedCounter)+".png")
-						//	msgList[i].ID+msgList[i].Embeds[j].Title+".png")
 					embedFile, err := os.Create(embedSavePath)
 					defer embedFile.Close()
 					if err != nil {
@@ -705,17 +690,6 @@ func processOneMessage(i int,
 	messageWriter.Flush()
 
 	return messageCounter
-}
-
-func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// Not sure what I actually wnat to do with this right now.
-	/*
-		fmt.Printf("%20s %20s %20s > %s\n",
-			m.ChannelID,
-			time.Now().Format(time.Stamp),
-			m.Author.Username,
-			m.Content)
-	*/
 }
 
 func unmarshal(data []byte, v interface{}) error {
