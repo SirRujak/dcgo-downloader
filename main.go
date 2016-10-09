@@ -37,6 +37,11 @@ type counter struct {
 }
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Fatal(r)
+		}
+	}()
 	// Use discordgo.New(Token) to just use a token for login.
 	dg, err := login()
 	if err != nil {
@@ -131,7 +136,7 @@ func getChannelIDs(s *discordgo.Session) []string {
 			if len(usrChnnls) > 0 {
 				for chnlIterator := 0; chnlIterator < len(usrChnnls); chnlIterator++ {
 					if usrChnnls[chnlIterator].IsPrivate {
-						fmt.Printf("%v %v %v\n", usrChnnls[chnlIterator].Recipient.Username, usrChnnls[chnlIterator].Recipient.Discriminator, usrChnnls[chnlIterator].Recipient.ID)
+						fmt.Printf("%v %v %v\n", usrChnnls[chnlIterator].Recipient.Username, usrChnnls[chnlIterator].Recipient.Discriminator, usrChnnls[chnlIterator].ID)
 					}
 				}
 			}
@@ -389,7 +394,8 @@ func getAllMessages(s *discordgo.Session, chatID string, baseFilePath string) {
 				)
 			}
 
-			fmt.Printf("Fetched %d messages.\n", messageCounter)
+			fmt.Printf("Fetched %d messages, %d attachments, %d embedings.", messageCounter.messageCounter, messageCounter.attachmentCounter, messageCounter.embedCounter)
+			fmt.Println()
 			lastMSG = msgList[len(msgList)-1].ID
 			time.Sleep(time.Millisecond * 1300)
 			msgList, err = s.ChannelMessages(chatID,
@@ -555,7 +561,7 @@ func processOneMessage(i int,
 	messageString += concatString + "<"
 
 	if len(msgList[i].Embeds) > 0 {
-		messageCounter.embedCounter++
+		//messageCounter.embedCounter++
 		concatString = msgList[i].Embeds[0].URL
 		embedString = msgList[i].ID + "<" +
 			msgList[i].Embeds[0].URL + "<" +
