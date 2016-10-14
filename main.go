@@ -270,7 +270,7 @@ func getAllMessages(s *discordgo.Session, chatID string, baseFilePath string) {
 
 	if chnnl.IsPrivate == true {
 		baseFilePath = filepath.Join(baseFilePath, "private")
-		baseFilePath = filepath.Join(baseFilePath, chnnl.Recipient.Username)
+		baseFilePath = filepath.Join(baseFilePath, chnnl.Recipient.Username+chnnl.ID)
 		err = os.MkdirAll(baseFilePath, os.ModePerm)
 		if err != nil {
 			fmt.Println("Error 1")
