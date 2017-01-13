@@ -442,8 +442,8 @@ func processOneMessage(i int,
 			strings.Replace(
 				msgList[i].ContentWithMentionsReplaced(),
 				"\n", "<br>", -1)) + "<" +
-		msgList[i].Timestamp + "<" +
-		msgList[i].EditedTimestamp + "<"
+		string(msgList[i].Timestamp) + "<" +
+		string(msgList[i].EditedTimestamp) + "<"
 	if len(msgList[i].MentionRoles) > 0 {
 		concatString = msgList[i].MentionRoles[0]
 		if len(msgList[i].MentionRoles) > 1 {
